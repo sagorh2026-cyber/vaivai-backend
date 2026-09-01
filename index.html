@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vai Vai — Admin Dashboard</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#15233A;
+    --ink-2:#1E3050;
+    --paper:#EDEFEA;
+    --panel:#FFFFFF;
+    --text:#1B1F23;
+    --text-mute:#5B6560;
+    --line:#D8DAD2;
+    --accent:#E2A03B;
+    --accent-ink:#5A3A0A;
+    --good:#2F7D5C;
+    --good-bg:#E4F0EA;
+    --bad:#C2483A;
+    --bad-bg:#FBE9E6;
+    --warn-bg:#FDF3E1;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;}
+  html,body{
+    background:var(--paper);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    font-size:14px;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.brand,.nav-item span{font-family:'Space Grotesk',sans-serif;}
+  .num{font-variant-numeric:tabular-nums;}
+  button{font-family:inherit;cursor:pointer;}
+  a{color:inherit;}
+
+  /* ---------- shell ---------- */
+  .shell{display:flex;min-height:100vh;}
+  .rail{
+    width:230px;flex:none;background:var(--ink);color:#DCE3EE;
+    display:flex;flex-direction:column;padding:22px 14px;
+    position:sticky;top:0;height:100vh;
+  }
+  .brand{
+    display:flex;align-items:baseline;gap:8px;padding:4px 10px 22px 10px;
+  }
+  .brand-mark{
+    width:30px;height:30px;border-radius:8px;background:var(--accent);
+    display:flex;align-items:center;justify-content:center;
+    color:var(--ink);font-weight:700;font-size:15px;flex:none;
+  }
+  .brand-text{font-size:17px;font-weight:600;color:#fff;letter-spacing:.2px;}
+  .brand-sub{font-size:10.5px;color:#8CA0BE;margin-top:-2px;}
+
+  .nav{display:flex;flex-direction:column;gap:2px;margin-top:6px;}
+  .nav-item{
+    display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;
+    background:transparent;border:none;color:#B7C4D8;text-align:left;font-size:13.5px;
+    transition:background .12s ease, color .12s ease;
+  }
+  .nav-item:hover{background:rgba(255,255,255,.06);color:#fff;}
+  .nav-item.active{background:rgba(226,160,59,.14);color:#fff;}
+  .nav-item.active .nav-dot{background:var(--accent);}
+  .nav-dot{width:6px;height:6px;border-radius:50%;background:#4C5D78;flex:none;}
+  .nav-item .badge{
+    margin-left:auto;background:var(--bad);color:#fff;font-size:10.5px;
+    padding:1px 6px;border-radius:20px;font-weight:600;
+  }
+
+  .rail-foot{margin-top:auto;padding-top:14px;border-top:1px solid rgba(255,255,255,.09);}
+  .rail-foot .who{display:flex;gap:9px;align-items:center;padding:8px 10px;}
+  .rail-foot .avatar{
+    width:28px;height:28px;border-radius:50%;background:#2A3F60;color:#DCE3EE;
+    display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex:none;
+  }
+  .rail-foot .name{font-size:12.5px;color:#DCE3EE;font-weight:600;}
+  .rail-foot .role{font-size:11px;color:#7E90AC;}
+
+  /* ---------- main ---------- */
+  .main{flex:1;min-width:0;}
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:18px 30px;border-bottom:1px solid var(--line);background:var(--panel);
+    position:sticky;top:0;z-index:5;
+  }
+  .topbar h1{font-size:19px;margin:0;font-weight:600;}
+  .topbar .sub{font-size:12.5px;color:var(--text-mute);margin-top:2px;}
+  .topbar-actions{display:flex;gap:10px;align-items:center;}
+  .search{
+    display:flex;align-items:center;gap:7px;background:var(--paper);
+    border:1px solid var(--line);border-radius:8px;padding:7px 11px;font-size:13px;color:var(--text-mute);
+    width:210px;
+  }
+  .search input{border:none;background:none;outline:none;font-size:13px;width:100%;color:var(--text);font-family:inherit;}
+
+  .btn{
+    border:1px solid var(--line);background:var(--panel);color:var(--text);
+    border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;
+    display:inline-flex;align-items:center;gap:6px;
+  }
+  .btn:hover{border-color:#B9BEB4;}
+  .btn-primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);}
+  .btn-primary:hover{background:#D6922E;}
+  .btn-ghost{border-color:transparent;background:transparent;}
+  .btn-ghost:hover{background:var(--paper);}
+  .btn-sm{padding:5px 10px;font-size:12px;border-radius:7px;}
+  .btn-danger-text{color:var(--bad);}
+
+  .view{display:none;padding:26px 30px 60px 30px;}
+  .view.active{display:block;}
+
+  /* ---------- stat row ---------- */
+  .stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;}
+  .stat{
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:16px 18px;
+  }
+  .stat .label{font-size:12px;color:var(--text-mute);margin-bottom:8px;}
+  .stat .value{font-size:24px;font-weight:700;font-family:'Space Grotesk',sans-serif;}
+  .stat .delta{font-size:11.5px;margin-top:5px;color:var(--text-mute);}
+  .stat .delta.up{color:var(--good);}
+  .stat .delta.warn{color:var(--bad);}
+
+  /* ---------- panel/table ---------- */
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin-bottom:20px;}
+  .panel-head{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:15px 18px;border-bottom:1px solid var(--line);
+  }
+  .panel-head h2{font-size:14.5px;margin:0;font-weight:600;}
+  .panel-head .meta{font-size:12px;color:var(--text-mute);}
+  .filters{display:flex;gap:8px;padding:12px 18px;border-bottom:1px solid var(--line);flex-wrap:wrap;}
+  select, .filters input{
+    border:1px solid var(--line);border-radius:7px;padding:6px 10px;font-size:12.5px;
+    background:var(--panel);color:var(--text);font-family:inherit;
+  }
+
+  table{width:100%;border-collapse:collapse;}
+  thead th{
+    text-align:left;font-size:11.5px;color:var(--text-mute);font-weight:600;
+    padding:10px 18px;border-bottom:1px solid var(--line);white-space:nowrap;
+  }
+  tbody td{padding:12px 18px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:#FAFAF7;}
+
+  .pill{
+    display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;
+    font-size:11.5px;font-weight:600;
+  }
+  .pill::before{content:'';width:6px;height:6px;border-radius:50%;}
+  .pill.active,.pill.confirmed,.pill.fulfilled{background:var(--good-bg);color:var(--good);}
+  .pill.active::before,.pill.confirmed::before,.pill.fulfilled::before{background:var(--good);}
+  .pill.suspended,.pill.cancelled,.pill.inactive,.pill.discontinued{background:var(--bad-bg);color:var(--bad);}
+  .pill.suspended::before,.pill.cancelled::before,.pill.inactive::before,.pill.discontinued::before{background:var(--bad);}
+  .pill.pending{background:var(--warn-bg);color:#8A5A12;}
+  .pill.pending::before{background:var(--accent);}
+
+  .who-cell{display:flex;align-items:center;gap:9px;}
+  .who-cell .avatar{
+    width:30px;height:30px;border-radius:50%;background:var(--paper);border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:700;color:var(--ink);flex:none;
+  }
+  .who-cell .n{font-weight:600;}
+  .who-cell .s{font-size:11.5px;color:var(--text-mute);}
+
+  .row-actions{display:flex;gap:6px;justify-content:flex-end;}
+  .icon-btn{
+    border:1px solid var(--line);background:var(--panel);border-radius:7px;width:28px;height:28px;
+    display:flex;align-items:center;justify-content:center;color:var(--text-mute);
+  }
+  .icon-btn:hover{color:var(--text);border-color:#B9BEB4;}
+
+  .low-flag{color:var(--bad);font-size:11px;font-weight:600;margin-top:3px;}
+
+  /* ---------- modal ---------- */
+  .overlay{
+    position:fixed;inset:0;background:rgba(21,35,58,.44);display:none;
+    align-items:center;justify-content:center;z-index:50;padding:20px;
+  }
+  .overlay.active{display:flex;}
+  .modal{
+    background:var(--panel);border-radius:12px;width:420px;max-width:100%;
+    box-shadow:0 20px 60px rgba(0,0,0,.25);
+  }
+  .modal-head{padding:18px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;}
+  .modal-head h3{margin:0;font-size:16px;}
+  .modal-body{padding:18px 20px;display:flex;flex-direction:column;gap:13px;}
+  .field label{display:block;font-size:12px;color:var(--text-mute);margin-bottom:5px;font-weight:600;}
+  .field input,.field select{
+    width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-size:13.5px;
+    font-family:inherit;background:var(--paper);
+  }
+  .modal-foot{padding:16px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px;}
+  .close-x{border:none;background:none;font-size:18px;color:var(--text-mute);line-height:1;}
+
+  /* ---------- tracking ---------- */
+  .track-layout{display:grid;grid-template-columns:290px 1fr;gap:16px;align-items:start;}
+  .sr-list{max-height:640px;overflow:auto;}
+  .sr-row{
+    display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--line);cursor:pointer;
+  }
+  .sr-row:hover{background:#FAFAF7;}
+  .sr-row.selected{background:var(--warn-bg);}
+  .dot-live{width:9px;height:9px;border-radius:50%;background:var(--good);flex:none;box-shadow:0 0 0 3px var(--good-bg);}
+  .dot-stale{width:9px;height:9px;border-radius:50%;background:#B9BEB4;flex:none;box-shadow:0 0 0 3px var(--paper);}
+  .sr-row .n{font-weight:600;font-size:13px;}
+  .sr-row .s{font-size:11.5px;color:var(--text-mute);}
+  #map{height:640px;border-radius:var(--radius);border:1px solid var(--line);}
+  .leaflet-popup-content{font-family:'Inter',sans-serif;font-size:12.5px;}
+
+  .empty{padding:40px 20px;text-align:center;color:var(--text-mute);font-size:13px;}
+
+  /* ---------- product image thumbnails / upload ---------- */
+  .thumb-sm{width:36px;height:36px;border-radius:8px;object-fit:cover;background:var(--paper);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:15px;flex:none;}
+  img.thumb-sm{padding:0;}
+  .img-upload-row{display:flex;gap:12px;align-items:center;}
+  .img-upload-preview{
+    width:64px;height:64px;border-radius:10px;background:var(--paper);border:1px dashed var(--line);
+    display:flex;align-items:center;justify-content:center;overflow:hidden;flex:none;color:var(--text-mute);
+  }
+
+  /* ---------- order detail modal ---------- */
+  .order-detail-section{margin-bottom:16px;}
+  .order-detail-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-mute);margin-bottom:8px;}
+  .order-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;}
+  .order-detail-grid label{display:block;font-size:11px;color:var(--text-mute);margin-bottom:2px;}
+  .order-detail-grid .v{font-size:13px;font-weight:600;color:var(--text);}
+  .order-detail-table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:4px;}
+  .order-detail-table th{text-align:left;font-size:11px;color:var(--text-mute);font-weight:600;padding:7px 6px;border-bottom:1px solid var(--line);}
+  .order-detail-table td{padding:8px 6px;border-bottom:1px solid var(--line);}
+  .order-detail-table th.num,.order-detail-table td.num{text-align:right;}
+  .order-detail-total{display:flex;justify-content:space-between;font-weight:700;font-size:14.5px;padding-top:10px;margin-top:4px;border-top:2px solid var(--ink);}
+
+  /* ---------- printable cash memo (admin) ---------- */
+  #printArea{display:none;}
+  @media print{
+    body *{visibility:hidden;}
+    #printArea,#printArea *{visibility:visible;}
+    #printArea{display:block !important;position:absolute;top:0;left:0;width:100%;padding:30px;color:#000;}
+    .memo-header{text-align:center;margin-bottom:16px;}
+    .memo-co{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;}
+    .memo-tag{font-size:12px;color:#555;letter-spacing:.6px;text-transform:uppercase;margin-top:2px;}
+    .memo-meta{display:flex;justify-content:space-between;font-size:13px;padding:10px 0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin-bottom:14px;}
+    .memo-meta div{display:flex;flex-direction:column;gap:2px;}
+    .memo-meta span{color:#666;font-size:11px;}
+    .memo-section{margin-bottom:14px;font-size:13px;line-height:1.6;}
+    .memo-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#666;margin-bottom:4px;}
+    .memo-table{width:100%;border-collapse:collapse;margin-top:6px;font-size:13px;}
+    .memo-table th{text-align:left;font-size:11px;color:#666;font-weight:600;padding:7px 5px;border-bottom:1px solid #ccc;}
+    .memo-table td{padding:8px 5px;border-bottom:1px solid #ccc;}
+    .memo-table td.num,.memo-table th.num{text-align:right;}
+    .memo-total{display:flex;justify-content:space-between;font-weight:700;font-size:16px;padding-top:12px;margin-top:8px;border-top:2px solid #000;}
+  }
+
+  @media (max-width: 980px){
+    .stat-row{grid-template-columns:repeat(2,1fr);}
+    .track-layout{grid-template-columns:1fr;}
+    .rail{position:fixed;left:0;bottom:0;top:auto;width:100%;height:auto;flex-direction:row;
+      overflow-x:auto;padding:8px;z-index:20;}
+    .brand,.rail-foot{display:none;}
+    .nav{flex-direction:row;}
+    .main{padding-bottom:60px;}
+    .view{padding:18px 16px 90px 16px;}
+    .topbar{padding:14px 16px;}
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- ============ LEFT RAIL ============ -->
+  <nav class="rail">
+    <div class="brand">
+      <div class="brand-mark">VV</div>
+      <div>
+        <div class="brand-text">Vai Vai</div>
+        <div class="brand-sub">Enterprise Admin</div>
+      </div>
+    </div>
+    <div class="nav">
+      <button class="nav-item active" data-view="reps"><span class="nav-dot"></span><span>SR Accounts</span></button>
+      <button class="nav-item" data-view="inventory"><span class="nav-dot"></span><span>Inventory &amp; Stock</span><span class="badge" id="lowStockBadge">0</span></button>
+      <button class="nav-item" data-view="orders"><span class="nav-dot"></span><span>Orders</span><span class="badge" id="pendingBadge">0</span></button>
+      <button class="nav-item" data-view="tracking"><span class="nav-dot"></span><span>Live Tracking</span></button>
+    </div>
+    <div class="rail-foot">
+      <div class="who">
+        <div class="avatar">RA</div>
+        <div>
+          <div class="name">Rafiq Ahmed</div>
+          <div class="role">Admin</div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ============ MAIN ============ -->
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <h1 id="pageTitle">SR Accounts</h1>
+        <div class="sub" id="pageSub">Create and manage sales rep logins</div>
+      </div>
+      <div class="topbar-actions">
+        <div class="search">
+          <span>⌕</span>
+          <input type="text" id="globalSearch" placeholder="Search this list…">
+        </div>
+        <button class="btn btn-primary" id="primaryAction">+ New SR</button>
+      </div>
+    </div>
+
+    <!-- ===================== VIEW: SR ACCOUNTS ===================== -->
+    <section class="view active" id="view-reps">
+      <div class="stat-row">
+        <div class="stat"><div class="label">Active SRs</div><div class="value num" id="statActiveReps">–</div><div class="delta">of <span id="statTotalReps">–</span> total</div></div>
+        <div class="stat"><div class="label">On route now</div><div class="value num" id="statOnRoute">–</div><div class="delta up">pinged in last 10 min</div></div>
+        <div class="stat"><div class="label">Shops onboarded (30d)</div><div class="value num" id="statShops30">–</div><div class="delta up">+ across all reps</div></div>
+        <div class="stat"><div class="label">Suspended</div><div class="value num" id="statSuspended">–</div><div class="delta">disabled, history kept</div></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>All sales reps</h2>
+          <div class="meta"><span id="repCount">–</span> reps</div>
+        </div>
+        <div class="filters">
+          <select id="repStatusFilter">
+            <option value="">All statuses</option>
+            <option value="active">Active</option>
+            <option value="suspended">Suspended</option>
+          </select>
+          <select id="repRouteFilter"><option value="">All routes</option></select>
+        </div>
+        <table>
+          <thead><tr>
+            <th>Rep</th><th>Road / Route</th><th>Phone</th><th>Status</th><th>Shops registered</th><th>Last ping</th><th></th>
+          </tr></thead>
+          <tbody id="repsTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===================== VIEW: INVENTORY ===================== -->
+    <section class="view" id="view-inventory">
+      <div class="stat-row">
+        <div class="stat"><div class="label">Active SKUs</div><div class="value num" id="statActiveSkus">–</div><div class="delta">of <span id="statTotalSkus">–</span> total</div></div>
+        <div class="stat"><div class="label">Low stock</div><div class="value num" id="statLowStock">–</div><div class="delta warn">below threshold</div></div>
+        <div class="stat"><div class="label">Total stock value</div><div class="value num" id="statStockValue">–</div><div class="delta">at current price</div></div>
+        <div class="stat"><div class="label">Discontinued</div><div class="value num" id="statDiscontinued">–</div><div class="delta">soft-deleted, kept for order history</div></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Product catalog</h2>
+          <div class="meta"><span id="productCount">–</span> products</div>
+        </div>
+        <div class="filters">
+          <select id="productCategoryFilter"><option value="">All categories</option></select>
+          <select id="productStatusFilter">
+            <option value="">All statuses</option>
+            <option value="active">Active</option>
+            <option value="discontinued">Discontinued</option>
+          </select>
+          <select id="stockFilter">
+            <option value="">All stock levels</option>
+            <option value="low">Low stock only</option>
+          </select>
+        </div>
+        <table>
+          <thead><tr>
+            <th>Image</th><th>Product</th><th>SKU</th><th>Unit</th><th>Price</th><th>Stock</th><th>Status</th><th>Updated by</th><th></th>
+          </tr></thead>
+          <tbody id="productsTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===================== VIEW: ORDERS ===================== -->
+    <section class="view" id="view-orders">
+      <div class="stat-row">
+        <div class="stat"><div class="label">Pending review</div><div class="value num" id="statPendingOrders">–</div><div class="delta warn">needs confirm/cancel</div></div>
+        <div class="stat"><div class="label">Confirmed today</div><div class="value num" id="statConfirmedToday">–</div><div class="delta up">awaiting fulfillment</div></div>
+        <div class="stat"><div class="label">Fulfilled (30d)</div><div class="value num" id="statFulfilled30">–</div><div class="delta">completed orders</div></div>
+        <div class="stat"><div class="label">Revenue (30d)</div><div class="value num" id="statRevenue30">–</div><div class="delta up">confirmed + fulfilled</div></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Order queue</h2>
+          <div class="meta"><span id="orderCount">–</span> orders</div>
+        </div>
+        <div class="filters">
+          <select id="orderStatusFilter">
+            <option value="">All statuses</option>
+            <option value="pending">Pending</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="fulfilled">Fulfilled</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+          <select id="orderRepFilter"><option value="">All reps</option></select>
+        </div>
+        <table>
+          <thead><tr>
+            <th>Order</th><th>Shop</th><th>Rep</th><th>Items</th><th>Total</th><th>Placed</th><th>Status</th><th></th>
+          </tr></thead>
+          <tbody id="ordersTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===================== VIEW: TRACKING ===================== -->
+    <section class="view" id="view-tracking">
+      <div class="stat-row">
+        <div class="stat"><div class="label">Live now</div><div class="value num" id="statLive">–</div><div class="delta up">pinged in last 10 min</div></div>
+        <div class="stat"><div class="label">Stale</div><div class="value num" id="statStale">–</div><div class="delta warn">no ping in 10+ min</div></div>
+        <div class="stat"><div class="label">Ping interval</div><div class="value num">45s</div><div class="delta">set via /config</div></div>
+        <div class="stat"><div class="label">Avg lag</div><div class="value num">2.1s</div><div class="delta">recorded → received</div></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Field map</h2>
+          <div class="meta">Noakhali region · Begumganj, Chowmuhani &amp; Maijdee routes · click a rep to focus</div>
+        </div>
+        <div style="padding:16px;">
+          <div class="track-layout">
+            <div class="sr-list" id="srList"></div>
+            <div id="map"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<!-- ============ MODAL: NEW / EDIT SR ============ -->
+<div class="overlay" id="repModalOverlay">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="repModalTitle">New sales rep</h3>
+      <button class="close-x" data-close="repModalOverlay">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field"><label>Full name</label><input type="text" id="repFormName" placeholder="e.g. Yasin Arafat (ইয়াছিন আরাফাত)"></div>
+      <div class="field"><label>Phone (login username)</label><input type="text" id="repFormPhone" placeholder="01XXXXXXXXX"></div>
+      <div class="field"><label>Assigned road / route</label><select id="repFormRoute"></select></div>
+      <div class="field"><label>Login password</label><input type="text" id="repFormPassword" placeholder="Set a login password for this SR"></div>
+      <div style="font-size:11.5px;color:var(--text-mute);">This SR can only view shops and book/deliver orders on their assigned route. They log into the SR app with the phone number and password set here.</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" data-close="repModalOverlay">Cancel</button>
+      <button class="btn btn-primary" id="repFormSave">Create SR</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: EDIT PRODUCT ============ -->
+<div class="overlay" id="productModalOverlay">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="productModalTitle">Edit product</h3>
+      <button class="close-x" data-close="productModalOverlay">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Product image</label>
+        <div class="img-upload-row">
+          <div class="img-upload-preview" id="productFormImagePreview"><span style="font-size:22px;">🖼️</span></div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <input type="file" id="productFormImageFile" accept="image/*" style="display:none;" onchange="handleProductImageUpload(event)">
+            <button type="button" class="btn btn-sm" onclick="document.getElementById('productFormImageFile').click()">Upload image</button>
+            <button type="button" class="btn btn-sm btn-ghost btn-danger-text" id="productFormImageRemove" onclick="removeProductImage()" style="display:none;">Remove image</button>
+          </div>
+        </div>
+      </div>
+      <div class="field"><label>Name</label><input type="text" id="productFormName"></div>
+      <div class="field"><label>SKU</label><input type="text" id="productFormSku"></div>
+      <div class="field"><label>Unit</label><input type="text" id="productFormUnit"></div>
+      <div class="field"><label>Price (৳)</label><input type="number" id="productFormPrice"></div>
+      <div class="field"><label>Stock quantity</label><input type="number" id="productFormStock"></div>
+      <div class="field"><label>Low stock threshold</label><input type="number" id="productFormThreshold"></div>
+      <div class="field"><label>Status</label>
+        <select id="productFormStatus"><option value="active">Active</option><option value="discontinued">Discontinued</option></select>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" data-close="productModalOverlay">Cancel</button>
+      <button class="btn btn-primary" id="productFormSave">Save changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: ORDER DETAIL ============ -->
+<div class="overlay" id="orderModalOverlay">
+  <div class="modal" style="width:560px;max-height:88vh;display:flex;flex-direction:column;">
+    <div class="modal-head">
+      <h3 id="orderModalTitle">Order detail</h3>
+      <button class="close-x" data-close="orderModalOverlay">✕</button>
+    </div>
+    <div class="modal-body" style="overflow-y:auto;">
+      <div id="orderDetailBody" style="font-size:13px;color:var(--text);"></div>
+      <div class="field">
+        <label>Move to status</label>
+        <select id="orderStatusSelect">
+          <option value="pending">Pending</option>
+          <option value="confirmed">Confirmed</option>
+          <option value="fulfilled">Fulfilled</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" data-close="orderModalOverlay">Close</button>
+      <button class="btn" id="orderPrintMemo" onclick="printOrderMemo()">🖨 Print Cash Memo / Save PDF</button>
+      <button class="btn btn-primary" id="orderStatusSave">Update status</button>
+    </div>
+  </div>
+</div>
+
+<!-- printable cash memo target (populated at print time, hidden otherwise) -->
+<div id="printArea"></div>
+
+<script>
+/* =========================================================================
+   MOCK DATA — stands in for the /admin/reps, /products, /orders,
+   /tracking/reps/live endpoints described in the backend spec.
+   Swap fetchReps(), fetchProducts(), fetchOrders(), fetchLiveLocations()
+   for real API calls; the render layer below doesn't need to change.
+   ========================================================================= */
+
+const now = Date.now();
+const minutesAgo = m => new Date(now - m*60000).toISOString();
+
+// Noakhali region — Begumganj / Chowmuhani / Maijdee routes. Each SR is a
+// dual-role Sales + Delivery rep: they book orders AND deliver product on
+// their assigned road/route. Admin sets phone (login username) + password
+// here; the SR app validates against these exact credentials.
+const ROUTES = [
+  'Maijdee–Sonapur Road',
+  'Chowmuhani–Sonapur Road',
+  'Begumganj–Chowmuhani Road',
+  'Maijdee–Begumganj Road',
+];
+const NOAKHALI_CENTER = {lat:22.8438, lng:91.0996};
+
+let reps = [
+  {id:'r1', name:'Yasin Arafat (ইয়াছিন আরাফাত)', phone:'01711-100001', password:'vv1234', role:'Sales + Delivery', route:'Maijdee–Sonapur Road', status:'active', shopsRegistered:14, lastPing:minutesAgo(2), lat:22.8438, lng:91.0996},
+  {id:'r2', name:'Sagar (সাগর)', phone:'01811-100002', password:'vv2345', role:'Sales + Delivery', route:'Chowmuhani–Sonapur Road', status:'active', shopsRegistered:18, lastPing:minutesAgo(4), lat:22.8631, lng:91.1004},
+  {id:'r3', name:'Md. Kasem (মোঃ কাসেম)', phone:'01911-100003', password:'vv3456', role:'Sales + Delivery', route:'Begumganj–Chowmuhani Road', status:'active', shopsRegistered:11, lastPing:minutesAgo(21), lat:22.9186, lng:91.1122},
+  {id:'r4', name:'Ibrahim Biplob (ইব্রাহিম বিপ্লব)', phone:'01611-100004', password:'vv4567', role:'Sales + Delivery', route:'Maijdee–Begumganj Road', status:'active', shopsRegistered:9, lastPing:minutesAgo(1), lat:22.8590, lng:91.1145},
+];
+
+const CATEGORY_LABELS = {
+  spices:  'Spices & Powders (মসলা ও গুঁড়া)',
+  nuts:    'Nuts, Raisins & Dry Fruits (বাদাম ও কিসমিস)',
+  aromatic:'Aromatic Spices (গরম মসলা)',
+  seeds:   'Seeds & Mustard (বীজ ও সরিষা)',
+  staples: 'Rice, Dal & Staples (চাল, ডাল ও নিত্যপণ্য)',
+};
+const CATEGORY_ICONS = { spices:'🌶️', nuts:'🥜', aromatic:'🌿', seeds:'🌾', staples:'🍚' };
+
+let products = [
+  // -- Spices & Powders (মসলা ও গুঁড়া) --
+  {id:'sp01', name:'Chili Powder (মরিচ)', category:'spices', sku:'SPC-001', unit:'kg', price:380, stock:120, threshold:30, status:'active', updatedBy:'Rafiq Ahmed'},
+  {id:'sp02', name:'Turmeric Powder (হলুদ)', category:'spices', sku:'SPC-002', unit:'kg', price:420, stock:140, threshold:35, status:'active', updatedBy:'Rafiq Ahmed'},
+  {id:'sp03', name:'Cumin Powder (জিরা)', category:'spices', sku:'SPC-003', unit:'kg', price:650, stock:90, threshold:25, status:'active', updatedBy:'Rafiq Ahmed'},
+  {id:'sp04', name:'Mixed Spice (মিক্স)', category:'spices', sku:'SPC-004', unit:'kg', price:480, stock:70, threshold:20, status:'active', updatedBy:'Rafiq Ahmed'},
+  {id:'sp05', name:'Coriander Powder (ধনিয়া)', category:'spices', sku:'SPC-005', unit:'kg', price:340, stock:100, threshold:25, status:'active', updatedBy:'Rafiq Ahmed'},
+  {id:'sp06', name:'Black Cumin Powder (কালি)', category:'spices', sku:'SPC-006', unit:'kg', price:900, stock:40, threshold:15, status:'active', updatedBy:'Rafiq Ahmed'},
+  {id:'sp07', name:'Crushed Cumin (আধা জিরা)', category:'spices', sku:'SPC-007', unit:'kg', price:600, stock:55, threshold:15, status:'active', updatedBy:'Rafiq Ahmed'},
+  {id:'sp08', name:'Crushed Coriander (আধা ধনিয়া)', category:'spices', sku:'SPC-008', unit:'kg', price:320, stock:60, threshold:15, status:'active', updatedBy:'Rafiq Ahmed'},
+  {id:'sp09', name:'Whole Chili (গোটা মরিচ)', category:'spices', sku:'SPC-009', unit:'kg', price:360, stock:130, threshold:30, status:'active', updatedBy:'Rafiq Ahmed'},
+  {id:'sp10', name:'Whole Black Cumin (গোটা কালি)', category:'spices', sku:'SPC-010', unit:'kg', price:850, stock:45, threshold:15, status:'active', updatedBy:'Rafiq Ahmed'},
+  {id:'sp11', name:'Roasted Black Cumin (ভাজা কালি)', category:'spices', sku:'SPC-011', unit:'kg', price:920, stock:30, threshold:10, status:'active', updatedBy:'Rafiq Ahmed'},
+
+  // -- Nuts, Raisins & Dry Fruits (বাদাম ও কিসমিস) --
+  {id:'nt01', name:'Whole Peanut (গোটা বাদাম)', category:'nuts', sku:'NUT-001', unit:'kg', price:220, stock:150, threshold:40, status:'active', updatedBy:'Rafiq Ahmed'},
+  {id:'nt02', name:'Peeled Peanut (ছিলা বাদাম)', category:'nuts', sku:'NUT-002', unit:'kg', price:260, stock:100, threshold:30, status:'active', updatedBy:'Rafiq Ahmed'},
+  {id:'nt03', name:'Raisins / Kismis (কিসমিস)', category:'nuts', sku:'NUT-003', unit:'kg', price:480, stock:80, threshold:20, status:'active', updatedBy:'Rafiq Ahmed'},
+  {id:'nt04', name:'Cashew Nut (কাজু বাদাম)', category:'nuts', sku:'NUT-004', unit:'kg', price:1350, stock:40, threshold:10, status:'active', updatedBy:'Rafiq Ahmed'},
+  {id:'nt05', name:'Almond (কাঠ বাদাম)', category:'nuts', sku:'NUT-005', unit:'kg', price:1450, stock:35, threshold:10, status:'active', updatedBy:'Rafiq Ahmed'},
+  {id:'nt06', name:'Dates / Chora (ছোরা)', category:'nuts', sku:'NUT-006', unit:'kg', price:320, stock:90, threshold:20, status:'active', updatedBy:'Rafiq Ahmed'},
+
+  // -- Aromatic Spices (গরম মসলা) --
+  {id:'ar01', name:'Cinnamon Stick (চোঙ্গা / দারচিনি)', category:'aromatic', sku:'ARO-001', unit:'kg', price:480, stock:60, threshold:15, status:'active', updatedBy:'Nasrin Sultana'},
+  {id:'ar02', name:'Cardamom (এলাচি)', category:'aromatic', sku:'ARO-002', unit:'kg', price:3200, stock:20, threshold:5, status:'active', updatedBy:'Nasrin Sultana'},
+  {id:'ar03', name:'Clove (লং)', category:'aromatic', sku:'ARO-003', unit:'kg', price:1600, stock:25, threshold:8, status:'active', updatedBy:'Nasrin Sultana'},
+  {id:'ar04', name:'Nutmeg (জয়ফল)', category:'aromatic', sku:'ARO-004', unit:'kg', price:1200, stock:20, threshold:5, status:'active', updatedBy:'Nasrin Sultana'},
+  {id:'ar05', name:'Mace (জয়ত্রিক)', category:'aromatic', sku:'ARO-005', unit:'kg', price:2800, stock:12, threshold:4, status:'active', updatedBy:'Nasrin Sultana'},
+  {id:'ar06', name:'White Pepper (সাদা মরিচ)', category:'aromatic', sku:'ARO-006', unit:'kg', price:1300, stock:18, threshold:5, status:'active', updatedBy:'Nasrin Sultana'},
+  {id:'ar07', name:'Black Pepper (কালা মরিচ)', category:'aromatic', sku:'ARO-007', unit:'kg', price:950, stock:45, threshold:12, status:'active', updatedBy:'Nasrin Sultana'},
+  {id:'ar08', name:'Bay Leaf (তেজ পাতা)', category:'aromatic', sku:'ARO-008', unit:'kg', price:260, stock:50, threshold:12, status:'active', updatedBy:'Nasrin Sultana'},
+
+  // -- Seeds & Mustard (বীজ ও সরিষা) --
+  {id:'sd01', name:'Bota Dana (বোঁটা দানা)', category:'seeds', sku:'SED-001', unit:'kg', price:220, stock:60, threshold:15, status:'active', updatedBy:'Rafiq Ahmed'},
+  {id:'sd02', name:'Mustard Seed (সরিষা)', category:'seeds', sku:'SED-002', unit:'kg', price:190, stock:100, threshold:25, status:'active', updatedBy:'Rafiq Ahmed'},
+  {id:'sd03', name:'Sweet Cumin / Fennel (মিষ্টি জিরা)', category:'seeds', sku:'SED-003', unit:'kg', price:260, stock:70, threshold:18, status:'active', updatedBy:'Rafiq Ahmed'},
+  {id:'sd04', name:'Black Seed / Methi (কালা জিরা / মেথি)', category:'seeds', sku:'SED-004', unit:'kg', price:340, stock:55, threshold:15, status:'active', updatedBy:'Rafiq Ahmed'},
+  {id:'sd05', name:'Shahi Fennel (মিষ্টি বারি শাহী)', category:'seeds', sku:'SED-005', unit:'kg', price:300, stock:40, threshold:12, status:'active', updatedBy:'Rafiq Ahmed'},
+  {id:'sd06', name:'Choto Soma (ছোট সোমা)', category:'seeds', sku:'SED-006', unit:'kg', price:220, stock:35, threshold:10, status:'active', updatedBy:'Rafiq Ahmed'},
+  {id:'sd07', name:'Tokma Seed (তোকমা)', category:'seeds', sku:'SED-007', unit:'kg', price:380, stock:45, threshold:12, status:'active', updatedBy:'Rafiq Ahmed'},
+  {id:'sd08', name:'Chia Seed (চিয়া সিড)', category:'seeds', sku:'SED-008', unit:'kg', price:620, stock:30, threshold:10, status:'active', updatedBy:'Rafiq Ahmed'},
+  {id:'sd09', name:'Pangan (পাঙ্গন)', category:'seeds', sku:'SED-009', unit:'kg', price:210, stock:30, threshold:10, status:'active', updatedBy:'Rafiq Ahmed'},
+  {id:'sd10', name:'Fenugreek / Methi (মেথী)', category:'seeds', sku:'SED-010', unit:'kg', price:150, stock:90, threshold:20, status:'active', updatedBy:'Rafiq Ahmed'},
+  {id:'sd11', name:'Bohura (বহুড়া)', category:'seeds', sku:'SED-011', unit:'kg', price:200, stock:30, threshold:10, status:'active', updatedBy:'Rafiq Ahmed'},
+  {id:'sd12', name:'Panch Phoron (পাঁচ ফোড়ন)', category:'seeds', sku:'SED-012', unit:'kg', price:280, stock:60, threshold:15, status:'active', updatedBy:'Rafiq Ahmed'},
+
+  // -- Rice, Dal & Staples (চাল, ডাল ও নিত্যপণ্য) --
+  {id:'rc01', name:'Green Peas / Motor (মটর)', category:'staples', sku:'STP-001', unit:'kg', price:110, stock:120, threshold:30, status:'active', updatedBy:'Nasrin Sultana'},
+  {id:'rc02', name:'Chickpeas / Chola (ছোলা)', category:'staples', sku:'STP-002', unit:'kg', price:130, stock:140, threshold:35, status:'active', updatedBy:'Nasrin Sultana'},
+  {id:'rc03', name:'Boot Dal (বুট)', category:'staples', sku:'STP-003', unit:'kg', price:120, stock:100, threshold:25, status:'active', updatedBy:'Nasrin Sultana'},
+  {id:'rc04', name:'Basmati Rice (বাসমতি)', category:'staples', sku:'STP-004', unit:'kg', price:220, stock:90, threshold:25, status:'active', updatedBy:'Nasrin Sultana'},
+  {id:'rc05', name:'Katari Parboiled Rice (সিদ্ধ কাটারী)', category:'staples', sku:'STP-005', unit:'kg', price:78, stock:200, threshold:50, status:'active', updatedBy:'Nasrin Sultana'},
+  {id:'rc06', name:'Parboiled Rice (সিদ্ধ চাল)', category:'staples', sku:'STP-006', unit:'kg', price:70, stock:220, threshold:50, status:'active', updatedBy:'Nasrin Sultana'},
+  {id:'rc07', name:'Chinigura Rice (চিনি গুড়া)', category:'staples', sku:'STP-007', unit:'kg', price:160, stock:90, threshold:20, status:'active', updatedBy:'Nasrin Sultana'},
+  {id:'rc08', name:'Dhanni Rice (ধান্নি)', category:'staples', sku:'STP-008', unit:'kg', price:74, stock:180, threshold:45, status:'active', updatedBy:'Nasrin Sultana'},
+  {id:'rc09', name:'Sugar (খাবার চিনি)', category:'staples', sku:'STP-009', unit:'kg', price:135, stock:250, threshold:60, status:'active', updatedBy:'Nasrin Sultana'},
+  {id:'rc10', name:'Salt (লবন)', category:'staples', sku:'STP-010', unit:'kg', price:45, stock:300, threshold:70, status:'active', updatedBy:'Nasrin Sultana'},
+  {id:'rc11', name:'Gram Flour / Besan (বেসন)', category:'staples', sku:'STP-011', unit:'kg', price:150, stock:90, threshold:20, status:'active', updatedBy:'Nasrin Sultana'},
+  {id:'rc12', name:'Halim Mix (হালিম)', category:'staples', sku:'STP-012', unit:'kg', price:260, stock:50, threshold:12, status:'active', updatedBy:'Nasrin Sultana'},
+  {id:'rc13', name:'Kabuli Chana (কাবুলি)', category:'staples', sku:'STP-013', unit:'kg', price:180, stock:70, threshold:18, status:'active', updatedBy:'Nasrin Sultana'},
+  {id:'rc14', name:'Red Lentil / Musuri (মুসরি)', category:'staples', sku:'STP-014', unit:'kg', price:155, stock:160, threshold:40, status:'active', updatedBy:'Nasrin Sultana'},
+  {id:'rc15', name:'Mung Dal (মুগ)', category:'staples', sku:'STP-015', unit:'kg', price:175, stock:120, threshold:30, status:'active', updatedBy:'Nasrin Sultana'},
+  {id:'rc16', name:'Mash Kalai Dal (মাস)', category:'staples', sku:'STP-016', unit:'kg', price:220, stock:60, threshold:15, status:'active', updatedBy:'Nasrin Sultana'},
+  {id:'rc17', name:'Anchor Dal (অংকার)', category:'staples', sku:'STP-017', unit:'kg', price:140, stock:70, threshold:18, status:'active', updatedBy:'Nasrin Sultana'},
+  {id:'rc18', name:'General Dal (ডাল)', category:'staples', sku:'STP-018', unit:'kg', price:120, stock:100, threshold:25, status:'active', updatedBy:'Nasrin Sultana'},
+];
+
+let shops = [
+  {name:'Maijdee General Store', keeper:'Abdul Karim', phone:'01711-000111', address:'Shop 12, Maijdee Court Road', bazar:'Maijdee Bazar', route:'Maijdee–Sonapur Road'},
+  {name:'Sonapur Traders', keeper:'Nasir Uddin', phone:'01812-000222', address:'Main Road, Sonapur', bazar:'Sonapur Bazar', route:'Maijdee–Sonapur Road'},
+  {name:'Chowmuhani Corner Shop', keeper:'Kamal Hossain', phone:'01911-000333', address:'Stall 8, Chowmuhani Notun Bazar', bazar:'Chowmuhani Notun Bazar', route:'Chowmuhani–Sonapur Road'},
+  {name:'Bara Bazar Store', keeper:'Nurul Islam', phone:'01611-000444', address:'Lane 3, Bara Bazar, Chowmuhani', bazar:'Bara Bazar, Chowmuhani', route:'Chowmuhani–Sonapur Road'},
+  {name:'Begumganj Traders', keeper:'Mizanur Rahman', phone:'01511-000555', address:'Main Road, Begumganj Bazar', bazar:'Begumganj Bazar', route:'Begumganj–Chowmuhani Road'},
+  {name:'Rasulpur General Store', keeper:'Salma Begum', phone:'01711-000666', address:'Bazar Gate, Rasulpur', bazar:'Rasulpur Bazar', route:'Begumganj–Chowmuhani Road'},
+  {name:'Maijdee Notun Bazar Shop', keeper:'Jasim Uddin', phone:'01812-000777', address:'Shop 4, Maijdee Notun Bazar', bazar:'Maijdee Notun Bazar', route:'Maijdee–Begumganj Road'},
+  {name:'Eklaspur Store', keeper:'Rina Akter', phone:'01911-000888', address:'Main Road, Eklaspur Bazar', bazar:'Eklaspur Bazar', route:'Maijdee–Begumganj Road'},
+];
+const shopByName = n => shops.find(s=>s.name===n) || {name:n, keeper:'—', phone:'—', address:'—', bazar:'—', route:'—'};
+const repByName = n => { const r = reps.find(x=>x.name===n); return r ? {name:r.name, phone:r.phone, route:r.route} : {name:n, phone:'—', route:'—'}; };
+
+function orderTotal(o){ return o.items.reduce((s,i)=>s + i.qty*i.price, 0); }
+
+let orders = [
+  {id:'o1001', shopName:'Maijdee General Store', repName:'Yasin Arafat (ইয়াছিন আরাফাত)', placed:minutesAgo(35), status:'pending',
+    items:[{name:'Chili Powder (মরিচ)', qty:8, price:380},{name:'Turmeric Powder (হলুদ)', qty:6, price:420},{name:'Salt (লবন)', qty:20, price:45},{name:'Sugar (খাবার চিনি)', qty:10, price:135},{name:'Basmati Rice (বাসমতি)', qty:10, price:220}]},
+  {id:'o1002', shopName:'Chowmuhani Corner Shop', repName:'Sagar (সাগর)', placed:minutesAgo(60), status:'pending',
+    items:[{name:'Cumin Powder (জিরা)', qty:5, price:650},{name:'Coriander Powder (ধনিয়া)', qty:8, price:340},{name:'Mustard Seed (সরিষা)', qty:12, price:190},{name:'Parboiled Rice (সিদ্ধ চাল)', qty:60, price:70},{name:'Red Lentil / Musuri (মুসরি)', qty:20, price:155},{name:'Salt (লবন)', qty:30, price:45},{name:'Sugar (খাবার চিনি)', qty:15, price:135},{name:'Chickpeas / Chola (ছোলা)', qty:10, price:130},{name:'Whole Peanut (গোটা বাদাম)', qty:6, price:220},{name:'Cinnamon Stick (চোঙ্গা / দারচিনি)', qty:4, price:480},{name:'Bay Leaf (তেজ পাতা)', qty:3, price:260},{name:'Black Pepper (কালা মরিচ)', qty:2, price:950}]},
+  {id:'o1003', shopName:'Bara Bazar Store', repName:'Sagar (সাগর)', placed:minutesAgo(140), status:'confirmed',
+    items:[{name:'Cardamom (এলাচি)', qty:0.5, price:3200},{name:'Clove (লং)', qty:1, price:1600},{name:'Bay Leaf (তেজ পাতা)', qty:1, price:260}]},
+  {id:'o1004', shopName:'Begumganj Traders', repName:'Md. Kasem (মোঃ কাসেম)', placed:minutesAgo(300), status:'fulfilled',
+    items:[{name:'Basmati Rice (বাসমতি)', qty:15, price:220},{name:'Katari Parboiled Rice (সিদ্ধ কাটারী)', qty:20, price:78},{name:'Mung Dal (মুগ)', qty:10, price:175},{name:'General Dal (ডাল)', qty:10, price:120},{name:'Salt (লবন)', qty:10, price:45},{name:'Sugar (খাবার চিনি)', qty:8, price:135},{name:'Gram Flour / Besan (বেসন)', qty:6, price:150},{name:'Chinigura Rice (চিনি গুড়া)', qty:5, price:160}]},
+  {id:'o1005', shopName:'Rasulpur General Store', repName:'Md. Kasem (মোঃ কাসেম)', placed:minutesAgo(400), status:'fulfilled',
+    items:[{name:'Whole Peanut (গোটা বাদাম)', qty:8, price:220},{name:'Raisins / Kismis (কিসমিস)', qty:5, price:480},{name:'Dates / Chora (ছোরা)', qty:4, price:320},{name:'Cashew Nut (কাজু বাদাম)', qty:2, price:1350},{name:'Sweet Cumin / Fennel (মিষ্টি জিরা)', qty:3, price:260},{name:'Chia Seed (চিয়া সিড)', qty:2, price:620}]},
+  {id:'o1006', shopName:'Maijdee Notun Bazar Shop', repName:'Ibrahim Biplob (ইব্রাহিম বিপ্লব)', placed:minutesAgo(1600), status:'cancelled',
+    items:[{name:'Fenugreek / Methi (মেথী)', qty:4, price:150},{name:'Panch Phoron (পাঁচ ফোড়ন)', qty:2, price:280}]},
+  {id:'o1007', shopName:'Eklaspur Store', repName:'Ibrahim Biplob (ইব্রাহিম বিপ্লব)', placed:minutesAgo(2200), status:'fulfilled',
+    items:[{name:'Chickpeas / Chola (ছোলা)', qty:15, price:130},{name:'Boot Dal (বুট)', qty:10, price:120},{name:'Anchor Dal (অংকার)', qty:10, price:140},{name:'Parboiled Rice (সিদ্ধ চাল)', qty:40, price:70},{name:'Sugar (খাবার চিনি)', qty:12, price:135},{name:'Salt (লবন)', qty:15, price:45},{name:'Halim Mix (হালিম)', qty:6, price:260},{name:'Kabuli Chana (কাবুলি)', qty:8, price:180},{name:'Green Peas / Motor (মটর)', qty:5, price:110}]},
+  {id:'o1008', shopName:'Sonapur Traders', repName:'Yasin Arafat (ইয়াছিন আরাফাত)', placed:minutesAgo(90), status:'pending',
+    items:[{name:'Whole Chili (গোটা মরিচ)', qty:10, price:360},{name:'Mustard Seed (সরিষা)', qty:8, price:190},{name:'Salt (লবন)', qty:15, price:45}]},
+];
+
+/* =========================================================================
+   NAVIGATION
+   ========================================================================= */
+const views = {
+  reps:      {title:'SR Accounts', sub:'Create and manage sales rep logins', action:'+ New SR'},
+  inventory: {title:'Inventory & Stock', sub:'Products, pricing, and stock levels the SR app syncs against', action:'+ New product'},
+  orders:    {title:'Orders', sub:'Review, confirm and fulfill orders booked in the field', action:'↻ Refresh'},
+  tracking:  {title:'Live SR Tracking', sub:'Latest known position of every active rep', action:'↻ Refresh'},
+};
+
+document.querySelectorAll('.nav-item').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const v = btn.dataset.view;
+    document.querySelectorAll('.view').forEach(s=>s.classList.remove('active'));
+    document.getElementById('view-'+v).classList.add('active');
+    document.getElementById('pageTitle').textContent = views[v].title;
+    document.getElementById('pageSub').textContent = views[v].sub;
+    document.getElementById('primaryAction').textContent = views[v].action;
+    document.getElementById('globalSearch').value='';
+    document.getElementById('globalSearch').placeholder = 'Search this list…';
+    currentView = v;
+    if(v==='tracking'){ setTimeout(initMapIfNeeded, 30); }
+  });
+});
+let currentView = 'reps';
+
+document.getElementById('primaryAction').addEventListener('click', ()=>{
+  if(currentView==='reps') openRepModal();
+  if(currentView==='inventory') openProductModal();
+  if(currentView==='orders') renderOrders();
+  if(currentView==='tracking') renderTracking();
+});
+
+/* =========================================================================
+   HELPERS
+   ========================================================================= */
+function fmtMoney(n){ return '৳' + n.toLocaleString('en-IN'); }
+function timeAgo(iso){
+  const mins = Math.round((now - new Date(iso).getTime())/60000);
+  if(mins < 1) return 'just now';
+  if(mins < 60) return mins + ' min ago';
+  const hrs = Math.round(mins/60);
+  if(hrs < 24) return hrs + ' hr ago';
+  return Math.round(hrs/24) + ' d ago';
+}
+function initials(name){ return name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase(); }
+
+/* =========================================================================
+   SR ACCOUNTS
+   ========================================================================= */
+function renderReps(){
+  const statusF = document.getElementById('repStatusFilter').value;
+  const routeF = document.getElementById('repRouteFilter').value;
+  const q = document.getElementById('globalSearch').value.toLowerCase();
+
+  // populate route filter once
+  const routeSel = document.getElementById('repRouteFilter');
+  if(routeSel.options.length===1){
+    ROUTES.forEach(t=>{
+      const o=document.createElement('option'); o.value=t; o.textContent=t; routeSel.appendChild(o);
+    });
+  }
+
+  let rows = reps.filter(r=>
+    (!statusF || r.status===statusF) &&
+    (!routeF || r.route===routeF) &&
+    (r.name.toLowerCase().includes(q) || r.phone.includes(q) || r.route.toLowerCase().includes(q))
+  );
+
+  document.getElementById('repCount').textContent = rows.length;
+  document.getElementById('statActiveReps').textContent = reps.filter(r=>r.status==='active').length;
+  document.getElementById('statTotalReps').textContent = reps.length;
+  document.getElementById('statOnRoute').textContent = reps.filter(r=> (now - new Date(r.lastPing))/60000 <= 10).length;
+  document.getElementById('statShops30').textContent = reps.reduce((a,r)=>a+r.shopsRegistered,0);
+  document.getElementById('statSuspended').textContent = reps.filter(r=>r.status==='suspended').length;
+
+  const body = document.getElementById('repsTableBody');
+  body.innerHTML = rows.length ? rows.map(r=>`
+    <tr>
+      <td><div class="who-cell"><div class="avatar">${initials(r.name)}</div><div><div class="n">${r.name}</div><div class="s">${r.role||'Sales + Delivery'}</div></div></div></td>
+      <td>${r.route}</td>
+      <td>${r.phone}</td>
+      <td><span class="pill ${r.status}">${r.status}</span></td>
+      <td class="num">${r.shopsRegistered}</td>
+      <td>${timeAgo(r.lastPing)}</td>
+      <td>
+        <div class="row-actions">
+          <button class="icon-btn" title="Edit" onclick="openRepModal('${r.id}')">✎</button>
+          <button class="icon-btn" title="View login credentials" onclick="viewRepCredentials('${r.id}')">🔑</button>
+          <button class="icon-btn" title="Reset password" onclick="resetRepPassword('${r.id}')">⟲</button>
+          <button class="icon-btn" title="${r.status==='active'?'Suspend':'Reactivate'}" onclick="toggleRepStatus('${r.id}')">${r.status==='active'?'⏻':'✓'}</button>
+        </div>
+      </td>
+    </tr>`).join('') : `<tr><td colspan="7"><div class="empty">No reps match this filter.</div></td></tr>`;
+
+  document.getElementById('lowStockBadge').textContent = products.filter(p=>p.status==='active' && p.stock<=p.threshold).length;
+  document.getElementById('pendingBadge').textContent = orders.filter(o=>o.status==='pending').length;
+}
+
+let editingRepId = null;
+function populateRepRouteSelect(){
+  const sel = document.getElementById('repFormRoute');
+  if(sel.options.length) return;
+  ROUTES.forEach(t=>{
+    const o=document.createElement('option'); o.value=t; o.textContent=t; sel.appendChild(o);
+  });
+}
+function openRepModal(id){
+  editingRepId = id || null;
+  populateRepRouteSelect();
+  document.getElementById('repModalTitle').textContent = id ? 'Edit sales rep' : 'New sales rep';
+  document.getElementById('repFormSave').textContent = id ? 'Save changes' : 'Create SR';
+  if(id){
+    const r = reps.find(x=>x.id===id);
+    document.getElementById('repFormName').value = r.name;
+    document.getElementById('repFormPhone').value = r.phone;
+    document.getElementById('repFormRoute').value = r.route;
+    document.getElementById('repFormPassword').value = '';
+    document.getElementById('repFormPassword').placeholder = 'Leave blank to keep current password';
+  } else {
+    ['repFormName','repFormPhone','repFormPassword'].forEach(id2=>document.getElementById(id2).value='');
+    document.getElementById('repFormRoute').value = ROUTES[0];
+    document.getElementById('repFormPassword').placeholder = 'Set a login password for this SR';
+  }
+  document.getElementById('repModalOverlay').classList.add('active');
+}
+document.getElementById('repFormSave').addEventListener('click', ()=>{
+  const name = document.getElementById('repFormName').value.trim();
+  const phone = document.getElementById('repFormPhone').value.trim();
+  const route = document.getElementById('repFormRoute').value;
+  const password = document.getElementById('repFormPassword').value.trim();
+  if(!name || !phone){ alert('Name and phone are required — phone is the SR login username.'); return; }
+  if(editingRepId){
+    const r = reps.find(x=>x.id===editingRepId);
+    r.name=name; r.phone=phone; r.route=route;
+    if(password) r.password = password;
+  } else {
+    if(!password){ alert('Set a login password — the SR needs it to sign in to the SR app.'); return; }
+    reps.push({id:'r'+(reps.length+1+Math.floor(Math.random()*1000)), name, phone, route, password, role:'Sales + Delivery', status:'active', shopsRegistered:0, lastPing:minutesAgo(9999), lat:NOAKHALI_CENTER.lat+((Math.random()-0.5)*0.08), lng:NOAKHALI_CENTER.lng+((Math.random()-0.5)*0.08)});
+  }
+  closeOverlay('repModalOverlay');
+  renderReps();
+});
+function toggleRepStatus(id){
+  const r = reps.find(x=>x.id===id);
+  r.status = r.status==='active' ? 'suspended' : 'active';
+  renderReps();
+}
+function resetRepPassword(id){
+  const r = reps.find(x=>x.id===id);
+  const newPass = 'vv' + Math.floor(1000+Math.random()*9000);
+  r.password = newPass;
+  alert('New temporary password issued for ' + r.name + ':\n\n' + newPass + '\n\nShare it with them securely — they can log into the SR app with their phone number and this password.');
+}
+function viewRepCredentials(id){
+  const r = reps.find(x=>x.id===id);
+  alert('SR app login for ' + r.name + '\n\nPhone (username): ' + r.phone + '\nPassword: ' + (r.password || '(not set — edit this SR to set one)') + '\nRoute: ' + r.route);
+}
+
+/* =========================================================================
+   INVENTORY
+   ========================================================================= */
+function renderProducts(){
+  const catF = document.getElementById('productCategoryFilter').value;
+  const statusF = document.getElementById('productStatusFilter').value;
+  const stockF = document.getElementById('stockFilter').value;
+  const q = document.getElementById('globalSearch').value.toLowerCase();
+
+  const catSel = document.getElementById('productCategoryFilter');
+  if(catSel.options.length===1){
+    [...new Set(products.map(p=>p.category))].forEach(c=>{
+      const o=document.createElement('option'); o.value=c; o.textContent=CATEGORY_LABELS[c]||c; catSel.appendChild(o);
+    });
+  }
+
+  let rows = products.filter(p=>
+    (!catF || p.category===catF) &&
+    (!statusF || p.status===statusF) &&
+    (!stockF || (p.stock<=p.threshold)) &&
+    (p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q))
+  );
+
+  document.getElementById('productCount').textContent = rows.length;
+  document.getElementById('statActiveSkus').textContent = products.filter(p=>p.status==='active').length;
+  document.getElementById('statTotalSkus').textContent = products.length;
+  document.getElementById('statLowStock').textContent = products.filter(p=>p.status==='active' && p.stock<=p.threshold).length;
+  document.getElementById('statStockValue').textContent = fmtMoney(products.reduce((a,p)=>a+(p.price*p.stock),0));
+  document.getElementById('statDiscontinued').textContent = products.filter(p=>p.status==='discontinued').length;
+
+  const body = document.getElementById('productsTableBody');
+  body.innerHTML = rows.length ? rows.map(p=>{
+    const low = p.status==='active' && p.stock<=p.threshold;
+    const thumb = p.image
+      ? `<img class="thumb-sm" src="${p.image}" alt="${p.name}">`
+      : `<div class="thumb-sm">${CATEGORY_ICONS[p.category]||'📦'}</div>`;
+    return `
+    <tr>
+      <td>${thumb}</td>
+      <td>${p.name}<div class="s" style="font-size:11px;color:var(--text-mute);margin-top:2px;">${(CATEGORY_LABELS[p.category]||'').split(' (')[0]}</div></td>
+      <td>${p.sku}</td>
+      <td>${p.unit}</td>
+      <td class="num">${fmtMoney(p.price)}</td>
+      <td class="num">${p.stock}${low?'<div class="low-flag">below threshold ('+p.threshold+')</div>':''}</td>
+      <td><span class="pill ${p.status}">${p.status}</span></td>
+      <td>${p.updatedBy}</td>
+      <td>
+        <div class="row-actions">
+          <button class="icon-btn" title="Edit" onclick="openProductModal('${p.id}')">✎</button>
+          <button class="icon-btn" title="Delete" onclick="deleteProduct('${p.id}')">🗑</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="9"><div class="empty">No products match this filter.</div></td></tr>`;
+
+  document.getElementById('lowStockBadge').textContent = products.filter(p=>p.status==='active' && p.stock<=p.threshold).length;
+}
+
+let editingProductId = null;
+let productFormImage = null;
+function openProductModal(id){
+  editingProductId = id || null;
+  document.getElementById('productModalTitle').textContent = id ? 'Edit product' : 'New product';
+  document.getElementById('productFormSave').textContent = id ? 'Save changes' : 'Create product';
+  if(id){
+    const p = products.find(x=>x.id===id);
+    document.getElementById('productFormName').value = p.name;
+    document.getElementById('productFormSku').value = p.sku;
+    document.getElementById('productFormUnit').value = p.unit;
+    document.getElementById('productFormPrice').value = p.price;
+    document.getElementById('productFormStock').value = p.stock;
+    document.getElementById('productFormThreshold').value = p.threshold;
+    document.getElementById('productFormStatus').value = p.status;
+    productFormImage = p.image || null;
+  } else {
+    document.getElementById('productFormName').value='';
+    document.getElementById('productFormSku').value='';
+    document.getElementById('productFormUnit').value='';
+    document.getElementById('productFormPrice').value='';
+    document.getElementById('productFormStock').value='';
+    document.getElementById('productFormThreshold').value='';
+    document.getElementById('productFormStatus').value='active';
+    productFormImage = null;
+  }
+  document.getElementById('productFormImageFile').value = '';
+  renderProductImagePreview();
+  document.getElementById('productModalOverlay').classList.add('active');
+}
+function handleProductImageUpload(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  if(!file.type.startsWith('image/')){ alert('Please select an image file.'); return; }
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    productFormImage = reader.result;
+    renderProductImagePreview();
+  };
+  reader.readAsDataURL(file);
+}
+function removeProductImage(){
+  productFormImage = null;
+  document.getElementById('productFormImageFile').value = '';
+  renderProductImagePreview();
+}
+function renderProductImagePreview(){
+  const preview = document.getElementById('productFormImagePreview');
+  const removeBtn = document.getElementById('productFormImageRemove');
+  if(productFormImage){
+    preview.innerHTML = `<img src="${productFormImage}" style="width:100%;height:100%;object-fit:cover;">`;
+    removeBtn.style.display = 'inline-flex';
+  } else {
+    preview.innerHTML = `<span style="font-size:22px;">🖼️</span>`;
+    removeBtn.style.display = 'none';
+  }
+}
+document.getElementById('productFormSave').addEventListener('click', ()=>{
+  const name = document.getElementById('productFormName').value.trim();
+  const sku = document.getElementById('productFormSku').value.trim();
+  if(!name || !sku){ alert('Name and SKU are required.'); return; }
+  const data = {
+    name, sku,
+    unit: document.getElementById('productFormUnit').value.trim() || 'piece',
+    price: Number(document.getElementById('productFormPrice').value) || 0,
+    stock: Number(document.getElementById('productFormStock').value) || 0,
+    threshold: Number(document.getElementById('productFormThreshold').value) || 0,
+    status: document.getElementById('productFormStatus').value,
+    image: productFormImage,
+  };
+  if(editingProductId){
+    Object.assign(products.find(x=>x.id===editingProductId), data, {updatedBy:'Rafiq Ahmed'});
+  } else {
+    products.push({id:'p'+(products.length+1+Math.floor(Math.random()*1000)), ...data, updatedBy:'Rafiq Ahmed'});
+  }
+  closeOverlay('productModalOverlay');
+  renderProducts();
+});
+function deleteProduct(id){
+  const p = products.find(x=>x.id===id);
+  if(!p) return;
+  if(!confirm('Delete "'+p.name+'"? This removes it from the SR catalog. Existing orders keep their history.')) return;
+  products = products.filter(x=>x.id!==id);
+  renderProducts();
+}
+
+/* =========================================================================
+   ORDERS
+   ========================================================================= */
+function renderOrders(){
+  const statusF = document.getElementById('orderStatusFilter').value;
+  const repF = document.getElementById('orderRepFilter').value;
+  const q = document.getElementById('globalSearch').value.toLowerCase();
+
+  const repSel = document.getElementById('orderRepFilter');
+  if(repSel.options.length===1){
+    [...new Set(orders.map(o=>o.repName))].forEach(r=>{
+      const o=document.createElement('option'); o.value=r; o.textContent=r; repSel.appendChild(o);
+    });
+  }
+
+  let rows = orders.filter(o=>
+    (!statusF || o.status===statusF) &&
+    (!repF || o.repName===repF) &&
+    (o.shopName.toLowerCase().includes(q) || o.repName.toLowerCase().includes(q) || o.id.includes(q))
+  ).sort((a,b)=> new Date(b.placed) - new Date(a.placed));
+
+  document.getElementById('orderCount').textContent = rows.length;
+  document.getElementById('statPendingOrders').textContent = orders.filter(o=>o.status==='pending').length;
+  document.getElementById('statConfirmedToday').textContent = orders.filter(o=>o.status==='confirmed').length;
+  document.getElementById('statFulfilled30').textContent = orders.filter(o=>o.status==='fulfilled').length;
+  document.getElementById('statRevenue30').textContent = fmtMoney(orders.filter(o=>o.status==='confirmed'||o.status==='fulfilled').reduce((a,o)=>a+orderTotal(o),0));
+
+  const body = document.getElementById('ordersTableBody');
+  body.innerHTML = rows.length ? rows.map(o=>`
+    <tr onclick="openOrderModal('${o.id}')" style="cursor:pointer;">
+      <td>#${o.id}</td>
+      <td>${o.shopName}</td>
+      <td>${o.repName}</td>
+      <td class="num">${o.items.length}</td>
+      <td class="num">${fmtMoney(orderTotal(o))}</td>
+      <td>${timeAgo(o.placed)}</td>
+      <td><span class="pill ${o.status}">${o.status}</span></td>
+      <td>
+        <div class="row-actions">
+          <button class="btn btn-sm" onclick="event.stopPropagation(); openOrderModal('${o.id}')">Review</button>
+        </div>
+      </td>
+    </tr>`).join('') : `<tr><td colspan="8"><div class="empty">No orders match this filter.</div></td></tr>`;
+
+  document.getElementById('pendingBadge').textContent = orders.filter(o=>o.status==='pending').length;
+}
+
+let editingOrderId = null;
+function openOrderModal(id){
+  editingOrderId = id;
+  const o = orders.find(x=>x.id===id);
+  const shop = shopByName(o.shopName);
+  const rep = repByName(o.repName);
+  const total = orderTotal(o);
+
+  const rowsHtml = o.items.map(i=>`
+    <tr><td>${i.name}</td><td class="num">${i.qty}</td><td class="num">${fmtMoney(i.price)}</td><td class="num">${fmtMoney(i.qty*i.price)}</td></tr>`).join('');
+
+  document.getElementById('orderModalTitle').textContent = 'Order #' + o.id;
+  document.getElementById('orderDetailBody').innerHTML = `
+    <div class="order-detail-section">
+      <div class="order-detail-title">Shop info</div>
+      <div class="order-detail-grid">
+        <div><label>Shop name</label><div class="v">${shop.name}</div></div>
+        <div><label>Shopkeeper</label><div class="v">${shop.keeper}</div></div>
+        <div><label>Phone</label><div class="v">${shop.phone}</div></div>
+        <div><label>Bazar / road</label><div class="v">${shop.bazar}</div></div>
+        <div style="grid-column:1/-1;"><label>Address</label><div class="v">${shop.address}</div></div>
+      </div>
+    </div>
+    <div class="order-detail-section">
+      <div class="order-detail-title">SR &amp; route info</div>
+      <div class="order-detail-grid">
+        <div><label>Booked by</label><div class="v">${rep.name}</div></div>
+        <div><label>Route</label><div class="v">${rep.route}</div></div>
+        <div><label>Phone</label><div class="v">${rep.phone}</div></div>
+        <div><label>Placed</label><div class="v">${timeAgo(o.placed)}</div></div>
+      </div>
+    </div>
+    <div class="order-detail-section">
+      <div class="order-detail-title">Itemized order</div>
+      <table class="order-detail-table">
+        <thead><tr><th>Product</th><th class="num">Qty</th><th class="num">Unit price</th><th class="num">Line total</th></tr></thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+      <div class="order-detail-total"><span>Total amount</span><strong>${fmtMoney(total)}</strong></div>
+    </div>`;
+  document.getElementById('orderStatusSelect').value = o.status;
+  document.getElementById('orderModalOverlay').classList.add('active');
+}
+document.getElementById('orderStatusSave').addEventListener('click', ()=>{
+  const o = orders.find(x=>x.id===editingOrderId);
+  o.status = document.getElementById('orderStatusSelect').value;
+  closeOverlay('orderModalOverlay');
+  renderOrders();
+});
+
+/* =========================================================================
+   CASH MEMO — PRINT / SAVE PDF
+   ========================================================================= */
+function printOrderMemo(){
+  const o = orders.find(x=>x.id===editingOrderId);
+  if(!o) return;
+  const shop = shopByName(o.shopName);
+  const rep = repByName(o.repName);
+  const total = orderTotal(o);
+  const dt = new Date(o.placed).toLocaleString('en-GB', {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'});
+  const rowsHtml = o.items.map(i=>`
+    <tr><td>${i.name}</td><td class="num">${i.qty}</td><td class="num">${fmtMoney(i.price)}</td><td class="num">${fmtMoney(i.qty*i.price)}</td></tr>`).join('');
+
+  document.getElementById('printArea').innerHTML = `
+    <div class="memo-header">
+      <div class="memo-co">Vai Vai Enterprise</div>
+      <div class="memo-tag">Cash Memo</div>
+    </div>
+    <div class="memo-meta">
+      <div><span>Order ID</span><strong>${o.id}</strong></div>
+      <div><span>Date &amp; time</span><strong>${dt}</strong></div>
+    </div>
+    <div class="memo-section">
+      <div class="memo-section-title">Shop details</div>
+      <div><strong>${shop.name}</strong></div>
+      <div>Shopkeeper: ${shop.keeper}</div>
+      <div>Phone: ${shop.phone}</div>
+      <div>Address: ${shop.address}</div>
+      <div>Road / Bazar: ${shop.bazar}</div>
+    </div>
+    <div class="memo-section">
+      <div class="memo-section-title">Sales representative</div>
+      <div>${rep.name} · ${rep.phone}</div>
+      <div>Route: ${rep.route}</div>
+    </div>
+    <table class="memo-table">
+      <thead><tr><th>Product</th><th class="num">Qty</th><th class="num">Price</th><th class="num">Total</th></tr></thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>
+    <div class="memo-total"><span>Total amount</span><strong>${fmtMoney(total)}</strong></div>`;
+  window.print();
+}
+
+/* =========================================================================
+   LIVE TRACKING
+   ========================================================================= */
+let map, markers = {};
+function initMapIfNeeded(){
+  if(map) { map.invalidateSize(); return; }
+  map = L.map('map', {zoomControl:true}).setView([NOAKHALI_CENTER.lat, NOAKHALI_CENTER.lng], 12);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors', maxZoom:18
+  }).addTo(map);
+  renderTracking();
+}
+
+function renderTracking(){
+  const live = reps.filter(r=> r.status==='active' && (now - new Date(r.lastPing))/60000 <= 10);
+  const stale = reps.filter(r=> r.status==='active' && (now - new Date(r.lastPing))/60000 > 10);
+  document.getElementById('statLive').textContent = live.length;
+  document.getElementById('statStale').textContent = stale.length;
+
+  const list = document.getElementById('srList');
+  list.innerHTML = reps.filter(r=>r.status==='active').map(r=>{
+    const isLive = (now - new Date(r.lastPing))/60000 <= 10;
+    return `<div class="sr-row" onclick="focusRep('${r.id}')" id="srrow-${r.id}">
+      <div class="${isLive?'dot-live':'dot-stale'}"></div>
+      <div>
+        <div class="n">${r.name}</div>
+        <div class="s">${r.route} · ${timeAgo(r.lastPing)}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  if(!map) return;
+  Object.values(markers).forEach(m=>map.removeLayer(m));
+  markers = {};
+  reps.filter(r=>r.status==='active').forEach(r=>{
+    const isLive = (now - new Date(r.lastPing))/60000 <= 10;
+    const icon = L.divIcon({
+      className:'', html:`<div style="width:16px;height:16px;border-radius:50%;background:${isLive?'#2F7D5C':'#B9BEB4'};border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);"></div>`,
+      iconSize:[16,16], iconAnchor:[8,8]
+    });
+    const m = L.marker([r.lat, r.lng], {icon}).addTo(map)
+      .bindPopup(`<strong>${r.name}</strong><br>${r.route}<br>${timeAgo(r.lastPing)}`);
+    markers[r.id] = m;
+  });
+}
+function focusRep(id){
+  document.querySelectorAll('.sr-row').forEach(el=>el.classList.remove('selected'));
+  document.getElementById('srrow-'+id).classList.add('selected');
+  const r = reps.find(x=>x.id===id);
+  if(map){ map.setView([r.lat, r.lng], 15); markers[id].openPopup(); }
+}
+
+/* =========================================================================
+   MODAL / MISC WIRING
+   ========================================================================= */
+document.querySelectorAll('[data-close]').forEach(el=>{
+  el.addEventListener('click', ()=> closeOverlay(el.dataset.close));
+});
+function closeOverlay(id){ document.getElementById(id).classList.remove('active'); }
+document.querySelectorAll('.overlay').forEach(ov=>{
+  ov.addEventListener('click', e=>{ if(e.target===ov) ov.classList.remove('active'); });
+});
+
+['repStatusFilter','repRouteFilter'].forEach(id=>document.getElementById(id).addEventListener('change', renderReps));
+['productCategoryFilter','productStatusFilter','stockFilter'].forEach(id=>document.getElementById(id).addEventListener('change', renderProducts));
+['orderStatusFilter','orderRepFilter'].forEach(id=>document.getElementById(id).addEventListener('change', renderOrders));
+
+document.getElementById('globalSearch').addEventListener('input', ()=>{
+  if(currentView==='reps') renderReps();
+  if(currentView==='inventory') renderProducts();
+  if(currentView==='orders') renderOrders();
+});
+
+/* initial render */
+renderReps();
+renderProducts();
+renderOrders();
+</script>
+</body>
+</html>
